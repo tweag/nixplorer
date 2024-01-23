@@ -1,149 +1,15 @@
 from pathlib import Path
-import subprocess
 from typing import Tuple
 from gremlin_python.process.graph_traversal import GraphTraversalSource
-import requests
-import backoff
-import shutil
 from gremlin_python.process.anonymous_traversal import traversal
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
-from requests.exceptions import ConnectionError
 from nixtract.model import Derivation
-import subprocess
 import time
-import psutil
 import click
-import webbrowser
 from halo import Halo
-from importlib import resources
-from nixplorer import janusgraph
 
-janusgraph_dir = resources.files(janusgraph)
-
-
-# TODO: Refactor this to make it a bit more re-usable (will be shared with front-end)
-class GraphProcess:
-    def __init__(self, cmd: str = "janusgraph-server", host="0.0.0.0", port=8182):
-        self.cmd = cmd
-        self.host = host
-        self.port = port
-        self._proc: subprocess.Popen | None = None
-
-    def cmd_exists(self) -> bool:
-        if shutil.which(self.cmd) is not None:
-            return True
-        else:
-            return False
-
-    def open(self) -> None:
-        if not self.cmd_exists():
-            raise Exception(
-                f"The specified command {self.cmd} could not be found in the current environment. "
-                "Make sure that you have it installed and on the PATH."
-            )
-        if self._proc:
-            return
-        self._proc = subprocess.Popen(
-            self.cmd,
-            # Note: As of writing this the janusgraph Nix derivation does not accept an argument for
-            # overriding the Janugraph config directory, etc. instead assuming that all conf is in the
-            # default location of $PWD/conf. Setting the subprocess working directory as a work-around
-            # since I'm feeling lazy ;).
-            cwd=str(janusgraph_dir),
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-
-    def close(self) -> None:
-        if self._proc:
-            for child in psutil.Process(self._proc.pid).children(recursive=True):
-                child.kill()
-            self._proc.kill()
-            self._proc.wait(timeout=30)
-
-    def __enter__(self):
-        self.open()
-        self.wait_until_ready()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-        return False
-
-    @backoff.on_predicate(backoff.expo, lambda is_ready: not is_ready, max_tries=10)
-    def wait_until_ready(self) -> bool:
-        return self.is_ready()
-
-    def is_ready(self) -> bool:
-        try:
-            requests.get(f"http://{self.host}:{self.port}")
-            return True
-        except ConnectionError:
-            return False
-
-
-class UIProcess:
-    def __init__(self, cmd: str = "launch-graph-explorer"):
-        self.cmd = cmd
-        self.host = "0.0.0.0"
-        self.port = "8080"
-        # TODO: Make port configurable
-        self._proc: subprocess.Popen | None = None
-
-    def cmd_exists(self) -> bool:
-        if shutil.which(self.cmd) is not None:
-            return True
-        else:
-            return False
-
-    def open(self) -> None:
-        if not self.cmd_exists():
-            raise Exception(
-                f"The specified command {self.cmd} could not be found in the current environment. "
-                "Make sure that you have it installed and on the PATH."
-            )
-        if self._proc:
-            return
-        self._proc = subprocess.Popen(
-            self.cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-
-    def close(self) -> None:
-        if self._proc:
-            for child in psutil.Process(self._proc.pid).children(recursive=True):
-                child.kill()
-            self._proc.kill()
-            self._proc.wait(timeout=30)
-
-    def __enter__(self):
-        self.open()
-        self.wait_until_ready()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-        return False
-
-    @backoff.on_predicate(backoff.expo, lambda is_ready: not is_ready, max_tries=10)
-    def wait_until_ready(self) -> bool:
-        return self.is_ready()
-
-    def is_ready(self) -> bool:
-        try:
-            requests.get(f"http://{self.host}:{self.port}")
-            return True
-        except ConnectionError:
-            return False
-
-    def launch_browser(self) -> None:
-        if not self._proc:
-            return
-        is_ready = self.wait_until_ready()
-        if not is_ready:
-            return
-        browser = webbrowser.get()
-        browser.open_new(f"http://{self.host}:{self.port}")
+from nixplorer.process.graph import Janusgraph
+from nixplorer.process.ui import GraphExplorer
 
 
 def load_graph(derivations: list[Derivation], g: GraphTraversalSource) -> None:
@@ -218,7 +84,7 @@ def cli(input_graph_file: str):
     _echo(f"Found {len(derivations)} derivations in input!")
 
     spinner.start("Launching nixplorer back-end")
-    with GraphProcess() as graph:
+    with Janusgraph() as graph:
         g = traversal().with_remote(
             DriverRemoteConnection(f"ws://{graph.host}:{graph.port}/gremlin", "g")
         )
@@ -233,7 +99,7 @@ def cli(input_graph_file: str):
         _echo(f"N Edges = {g.E().count().to_list()}")
 
         spinner.start("Launching nixplorer UI")
-        with UIProcess() as ui:
+        with GraphExplorer() as ui:
             ui.launch_browser()
             spinner.succeed()
             _echo("UI now available at http://0.0.0.0:8080")
