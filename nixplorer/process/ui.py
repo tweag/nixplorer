@@ -1,8 +1,10 @@
 import os
+import webbrowser
+
 import requests
 from requests.exceptions import ConnectionError
+
 from nixplorer.process import ManagedSubProcess
-import webbrowser
 
 
 class GraphExplorer(ManagedSubProcess):
@@ -12,9 +14,7 @@ class GraphExplorer(ManagedSubProcess):
     # TODO: Allow the port to be configurable
     port = "8080"
 
-    def __init__(
-        self, cmd: str = "launch-graph-explorer", working_dir: str = os.getcwd()
-    ):
+    def __init__(self, cmd: str = "launch-graph-explorer", working_dir: str = os.getcwd()):
         self.cmd = cmd
         self.working_dir = working_dir
 

@@ -1,5 +1,7 @@
 # nixplorer
 
+![Build](https://img.shields.io/github/actions/workflow/status/tweag/nixplorer/ci.yml) [![Discord channel](https://img.shields.io/discord/1174731094726295632)](https://discord.gg/53XwX7Ft)
+
 A tool for visualizing Nix dependency graphs produced by [`nixtract`](https://www.github.com/tweag/nixtract).
 
 > This tool is still in a prototype stage and is subject to bugs and major changes. Please report any issues you encounter :smile:.
@@ -52,6 +54,48 @@ which is running at http://0.0.0.0:8182.
 
 ### UI features
 
-We currently leverage AWS's graph-explorer for the nixplorer UI. You can find
+We currently leverage AWS's graph-explorer for the nixplorer UI. Some key
+features include:
+
+- Searching for derivations by attributes (e.g. name, license)
+- Viewing data in a table
+- Plotting stylable subgraphs and exporting static images
+
+You can find
 further documentation on how to use graph-explorer at it's homepage here:
 https://github.com/aws/graph-explorer.
+
+## Development
+
+### Set-up
+
+This project is implemented in Python along with some Nix packaging for
+applications we leverage under the hood such as AWS's Graph Explorer.
+
+The project is packaged using a combination of Nix and Poetry. You can
+use the project's Nix shell to get an environment which includes both
+Poetry and the binaries we depend on such as Janusgraph and Graph Explorer.
+
+The only system requirement is Nix with the flakes feature enabled.
+
+```sh
+nix develop
+```
+
+Once in the shell you can use Poetry as usual for local development:
+
+```
+# Install dependencies
+poetry install
+
+# Enter a Poetry shell
+poetry shell
+```
+
+We leverage `alejandra` for formatting Nix code (provided by the Nix shell) and a
+combination of `black`, `ruff`, and `pyright` for formatting and linting Python code
+(provided by Poetry).
+
+### Architecture
+
+![architecture](docs/architecture.drawio.png)

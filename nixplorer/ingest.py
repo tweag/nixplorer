@@ -2,9 +2,8 @@
 Utilities for ingesting data into the nixplorer back-end.
 """
 
-from gremlin_python.process.graph_traversal import GraphTraversalSource, GraphTraversal
+from gremlin_python.process.graph_traversal import GraphTraversal, GraphTraversalSource
 from nixtract.model import Derivation
-
 
 GremlinPropertyType = int | str
 
@@ -17,17 +16,13 @@ class EdgeLabels:
     BUILD_INPUT = "has_build_input"
 
 
-def append_property(
-    name: str, value: GremlinPropertyType | None, traversal: GraphTraversal
-) -> GraphTraversal:
+def append_property(name: str, value: GremlinPropertyType | None, traversal: GraphTraversal) -> GraphTraversal:
     if value is None:
         return traversal
     return traversal.property(name, value)
 
 
-def insert_derivation_vertex(
-    derivation: Derivation, traversal_base: GraphTraversal
-) -> GraphTraversal:
+def insert_derivation_vertex(derivation: Derivation, traversal_base: GraphTraversal) -> GraphTraversal:
     """
     Constructs a graph traversal which creates a vertex corresponding to
     a derivation along with vertex properties.
@@ -91,6 +86,4 @@ def load_graph(derivations: list[Derivation], g: GraphTraversalSource) -> None:
             # Ignore derivations which do not have an output path since we require this property
             if bi.output_path is None:
                 continue
-            insert_build_input_edge(
-                drv.output_path, bi.output_path, g.get_graph_traversal()
-            ).iterate()
+            insert_build_input_edge(drv.output_path, bi.output_path, g.get_graph_traversal()).iterate()

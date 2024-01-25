@@ -29,3 +29,9 @@ black = "^23.12.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+select = ["F", "I"]

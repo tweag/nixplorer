@@ -1,13 +1,14 @@
+import time
 from pathlib import Path
 from typing import Tuple
-from gremlin_python.process.anonymous_traversal import traversal
-from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
-from nixtract.model import Derivation
-import time
-import click
-from halo import Halo
-from nixplorer.ingest import load_graph
 
+import click
+from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
+from gremlin_python.process.anonymous_traversal import traversal
+from halo import Halo
+from nixtract.model import Derivation
+
+from nixplorer.ingest import load_graph
 from nixplorer.process.graph import Janusgraph
 from nixplorer.process.ui import GraphExplorer
 
@@ -32,9 +33,7 @@ def _echo(message: str) -> None:
 
 
 @click.command()
-@click.option(
-    "--graph", "input_graph_file", required=True, type=click.Path(exists=True)
-)
+@click.option("--graph", "input_graph_file", required=True, type=click.Path(exists=True))
 def cli(input_graph_file: str):
     spinner = Halo(text="Reading input graph file", spinner="dots")
     derivations, errors = read_graph_jsonl(Path(input_graph_file))
@@ -45,9 +44,7 @@ def cli(input_graph_file: str):
 
     spinner.start("Launching nixplorer back-end")
     with Janusgraph() as graph:
-        g = traversal().with_remote(
-            DriverRemoteConnection(f"ws://{graph.host}:{graph.port}/gremlin", "g")
-        )
+        g = traversal().with_remote(DriverRemoteConnection(f"ws://{graph.host}:{graph.port}/gremlin", "g"))
         spinner.succeed()
         _echo(f"Gremlin back-end launched at http://{graph.host}:{graph.port}")
 
