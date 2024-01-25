@@ -1,6 +1,8 @@
+from importlib import resources
+
 import requests
 from requests.exceptions import ConnectionError
-from importlib import resources
+
 from nixplorer import janusgraph
 from nixplorer.process import ManagedSubProcess
 

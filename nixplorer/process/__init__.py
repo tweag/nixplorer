@@ -1,8 +1,8 @@
 import shutil
-from typing import Protocol
-import backoff
 import subprocess
+from typing import Protocol
 
+import backoff
 import psutil
 
 
