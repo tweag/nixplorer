@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      # TODO: Can we move some of these checks into the Nix flake?
+      - name: Check
+        run: |
+          nix develop --command alejandra --check ./nix flake.nix
+          nix develop --command poetry install
+          nix develop --command poetry run black . --check
+          nix develop --command poetry run pyright
+          nix develop --command poetry run ruff check --show-files .
+      - name: Build
+        run: nix build .
