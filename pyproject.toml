@@ -24,7 +24,7 @@ halo = "^0.0.31"
 fawltydeps = "^0.13.3"
 pyright = "^1.1.343"
 ruff = "^0.1.9"
-black = "^23.12.1"
+black = "^24.3.0"
 
 [build-system]
 requires = ["poetry-core"]
